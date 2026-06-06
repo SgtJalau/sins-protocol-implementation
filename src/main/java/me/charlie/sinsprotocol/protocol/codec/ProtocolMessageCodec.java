@@ -25,6 +25,7 @@ import java.util.Map;
 //Encodes and decodes protocol messages using stable JSON for transcript hashing and MAC input.
 public final class ProtocolMessageCodec {
 
+    //Canonical object mapper for json, so that items are always serialized in same standard, alphabetical order, so macs match on client and server
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
             .enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
             .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
