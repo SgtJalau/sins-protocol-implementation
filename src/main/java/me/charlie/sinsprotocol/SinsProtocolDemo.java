@@ -16,6 +16,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
+/**
+ * Runnable showcase for the SINS protocol implementation.
+ *
+ * It runs client and server, prints every protocol packet, and shows the decrypted readings accepted by the client.
+ * No network transport is used here, so the demo focuses on protocol behavior rather than socket setup.
+ */
 public final class SinsProtocolDemo {
 
     private static final Logger LOGGER = Logger.getLogger(SinsProtocolDemo.class.getName());
@@ -23,6 +29,9 @@ public final class SinsProtocolDemo {
     private SinsProtocolDemo() {
     }
 
+    /**
+     * Starts a complete demo session with packet logging enabled.
+     */
     public static void main(String[] args) {
         configureConsoleLogging();
 
@@ -35,11 +44,16 @@ public final class SinsProtocolDemo {
 
         LOGGER.info("Starting SINS protocol demo");
         runHandshake(client, server);
-        runDataExchange(client, server, 3);
+        runDataExchange(client, server, 11);
         client.createClose(CloseReason.NORMAL_SHUTDOWN);
         LOGGER.info("Demo finished");
     }
 
+    /**
+     * Executes packets: HELLO, HELLO_ACK, CLIENT_AUTH and SERVER_AUTH.
+     * @param client The client to run the handshake for
+     * @param server The server to run the handshake for
+     */
     private static void runHandshake(SinsClient client, SinsServer server) {
         HelloMessage hello = client.startHandshake();
         HelloAckMessage helloAck = server.handleHello(hello);
@@ -49,6 +63,12 @@ public final class SinsProtocolDemo {
         LOGGER.info("Handshake complete, session id: " + client.sessionId());
     }
 
+    /**
+     * Sends DATA_REQUEST messages and lets the client verify and decrypt DATA_RESPONSE messages.
+     * @param client The client for the data exchange
+     * @param server The server for the data exchange
+     * @param requestCount the amount of data requests to exchange
+     */
     private static void runDataExchange(SinsClient client, SinsServer server, int requestCount) {
         for (int index = 0; index < requestCount; index++) {
             DataRequestMessage request = client.createDataRequest();
@@ -58,8 +78,14 @@ public final class SinsProtocolDemo {
         }
     }
 
+    /**
+     * Provides deterministic sensor readings so the demo output is easy to follow.
+     * It rotates over a set of request data packages.
+     * @param requestId the request id to determine the reading for
+     * @return the sensor reading for the request
+     */
     private static String sensorReadingFor(long requestId) {
-        return switch ((int) requestId) {
+        return switch ((int) requestId%4) {
             case 1 -> "temperature=21.5C";
             case 2 -> "humidity=43%";
             case 3 -> "air-quality=good";
@@ -67,6 +93,10 @@ public final class SinsProtocolDemo {
         };
     }
 
+    /**
+     * Replaces default handlers with a simple console handler.
+     * Packet JSON is colorized by ProtocolPacketLogger, while this method keeps logger configuration local to the demo.
+     */
     private static void configureConsoleLogging() {
         Logger rootLogger = Logger.getLogger("");
         rootLogger.setLevel(Level.INFO);

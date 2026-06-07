@@ -1,5 +1,7 @@
 package me.charlie.sinsprotocol.util;
 
+import lombok.Getter;
+import lombok.Setter;
 import me.charlie.sinsprotocol.protocol.codec.ProtocolMessageCodec;
 import me.charlie.sinsprotocol.protocol.message.ProtocolMessage;
 
@@ -14,38 +16,21 @@ public final class ProtocolPacketLogger {
 
     private final String endpointName;
     private final Logger logger;
+
+    @Getter
+    @Setter
     private boolean enabled;
+    @Getter
+    @Setter
     private boolean prettyPrintJson;
+    @Getter
+    @Setter
     private boolean colorizeJson;
 
     public ProtocolPacketLogger(String endpointName, boolean enabled, Logger logger) {
         this.endpointName = Objects.requireNonNull(endpointName, "endpointName");
         this.enabled = enabled;
         this.logger = Objects.requireNonNull(logger, "logger");
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setPrettyPrintJson(boolean prettyPrintJson) {
-        this.prettyPrintJson = prettyPrintJson;
-    }
-
-    public boolean isPrettyPrintJson() {
-        return prettyPrintJson;
-    }
-
-    public void setColorizeJson(boolean colorizeJson) {
-        this.colorizeJson = colorizeJson;
-    }
-
-    public boolean isColorizeJson() {
-        return colorizeJson;
     }
 
     public void incoming(ProtocolMessage message) {
