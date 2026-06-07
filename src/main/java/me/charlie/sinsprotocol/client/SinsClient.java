@@ -67,6 +67,14 @@ public final class SinsClient {
         return packetLogger.isEnabled();
     }
 
+    public void setPrettyPrintPacketLogs(boolean prettyPrintPacketLogs) {
+        packetLogger.setPrettyPrintJson(prettyPrintPacketLogs);
+    }
+
+    public void setColorizePacketLogs(boolean colorizePacketLogs) {
+        packetLogger.setColorizeJson(colorizePacketLogs);
+    }
+
     //Starts the handshake with a fresh session id, nonce and X25519 key pair.
     public HelloMessage startHandshake() {
         requireState(ClientState.NEW);

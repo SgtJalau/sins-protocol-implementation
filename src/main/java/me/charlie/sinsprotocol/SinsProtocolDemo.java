@@ -28,6 +28,10 @@ public final class SinsProtocolDemo {
 
         SinsClient client = new SinsClient(true);
         SinsServer server = new SinsServer(SinsProtocolDemo::sensorReadingFor, true);
+        client.setPrettyPrintPacketLogs(true);
+        server.setPrettyPrintPacketLogs(true);
+        client.setColorizePacketLogs(true);
+        server.setColorizePacketLogs(true);
 
         LOGGER.info("Starting SINS protocol demo");
         runHandshake(client, server);

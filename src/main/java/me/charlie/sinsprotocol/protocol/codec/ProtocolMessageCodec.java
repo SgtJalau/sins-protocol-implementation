@@ -41,6 +41,11 @@ public final class ProtocolMessageCodec {
         return canonicalJson(message.toFields());
     }
 
+    //Serializes a typed message for human-readable logs while preserving sorted field order.
+    public static String encodePretty(ProtocolMessage message) {
+        return prettyJson(message.toFields());
+    }
+
     //Returns UTF-8 bytes for hashing and transcript construction.
     public static byte[] canonicalBytes(ProtocolMessage message) {
         return encode(message).getBytes(StandardCharsets.UTF_8);
@@ -73,6 +78,15 @@ public final class ProtocolMessageCodec {
     public static String canonicalJson(Map<String, Object> fields) {
         try {
             return OBJECT_MAPPER.writeValueAsString(fields);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalArgumentException("Could not encode protocol message", exception);
+        }
+    }
+
+    //Pretty JSON is only for logging or demos. Protocol hashes and MACs must use canonicalJson.
+    public static String prettyJson(Map<String, Object> fields) {
+        try {
+            return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(fields);
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException("Could not encode protocol message", exception);
         }

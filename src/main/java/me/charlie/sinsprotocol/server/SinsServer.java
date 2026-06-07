@@ -67,6 +67,14 @@ public final class SinsServer {
         return packetLogger.isEnabled();
     }
 
+    public void setPrettyPrintPacketLogs(boolean prettyPrintPacketLogs) {
+        packetLogger.setPrettyPrintJson(prettyPrintPacketLogs);
+    }
+
+    public void setColorizePacketLogs(boolean colorizePacketLogs) {
+        packetLogger.setColorizeJson(colorizePacketLogs);
+    }
+
     //Accepts a new HELLO and returns HELLO_ACK with the server key share.
     public HelloAckMessage handleHello(HelloMessage receivedHelloMessage) {
         packetLogger.incoming(receivedHelloMessage);
