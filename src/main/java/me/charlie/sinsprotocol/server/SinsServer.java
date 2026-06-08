@@ -227,6 +227,21 @@ public final class SinsServer {
         return closeMessage;
     }
 
+    public void handleClientClose(CloseMessage closeMessage) {
+        packetLogger.incoming(closeMessage);
+        validateSession(closeMessage.sessionId(), closeMessage.version());
+        validateSequence(closeMessage.sequenceNumber(), nextClientSequenceNumber, "client");
+        int expectedEpoch = closeEpoch(closeMessage.sequenceNumber());
+        validateEpoch(closeMessage.epoch(), expectedEpoch);
+        MessageAuthentication.verifyMessageMac(
+                sessionKeys.epoch(closeMessage.epoch()).clientMacKey(),
+                closeMessage,
+                closeMessage.messageMac()
+        );
+        nextClientSequenceNumber++;
+        state = ServerState.CLOSED;
+    }
+
     public boolean isConnected() {
         return state == ServerState.CONNECTED;
     }

@@ -1,6 +1,7 @@
 package me.charlie.sinsprotocol;
 
 import me.charlie.sinsprotocol.client.SinsClient;
+import me.charlie.sinsprotocol.client.SinsSocketClient;
 import me.charlie.sinsprotocol.protocol.message.ClientAuthMessage;
 import me.charlie.sinsprotocol.protocol.message.DataRequestMessage;
 import me.charlie.sinsprotocol.protocol.message.DataResponseMessage;
@@ -11,7 +12,11 @@ import me.charlie.sinsprotocol.protocol.message.ProtocolConstants;
 import me.charlie.sinsprotocol.protocol.message.ServerAuthMessage;
 import me.charlie.sinsprotocol.protocol.validation.ProtocolException;
 import me.charlie.sinsprotocol.server.SinsServer;
+import me.charlie.sinsprotocol.server.SinsSocketServer;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -286,6 +291,37 @@ class SinsProtocolSimulationTest {
         ClientAuthMessage clientAuth = client.handleHelloAck(helloAck);
 
         assertThrows(ProtocolException.class, () -> server.handleClientAuth(clientAuth));
+    }
+
+    /**
+     * Simulates the same protocol exchange over a real TCP socket.
+     *
+     * The server listens on an ephemeral local port, the client connects, both sides exchange
+     * JSON-encoded protocol packets, and the client receives decrypted readings before closing.
+     */
+    @Test
+    void socketClientAndServerExchangeProtocolMessages() throws Exception {
+        try (SinsSocketServer socketServer = new SinsSocketServer(0, requestId -> "socket-reading-" + requestId)) {
+            AtomicReference<Exception> serverFailure = new AtomicReference<>();
+            Thread serverThread = new Thread(() -> {
+                try {
+                    socketServer.serveOneClient();
+                } catch (Exception exception) {
+                    serverFailure.set(exception);
+                }
+            });
+            serverThread.start();
+
+            SinsSocketClient socketClient = new SinsSocketClient("localhost", socketServer.port());
+            List<String> readings = socketClient.requestReadings(2);
+            serverThread.join(5_000);
+
+            assertEquals(List.of("socket-reading-1", "socket-reading-2"), readings);
+            assertFalse(serverThread.isAlive());
+            if (serverFailure.get() != null) {
+                throw serverFailure.get();
+            }
+        }
     }
 
     private void completeHandshake(SinsClient client, SinsServer server) {

@@ -15,6 +15,7 @@ import me.charlie.sinsprotocol.protocol.message.DataResponseMessage;
 import me.charlie.sinsprotocol.protocol.message.HelloAckMessage;
 import me.charlie.sinsprotocol.protocol.message.HelloMessage;
 import me.charlie.sinsprotocol.protocol.message.ProtocolConstants;
+import me.charlie.sinsprotocol.protocol.message.ServerAuthMessage;
 import me.charlie.sinsprotocol.protocol.validation.ProtocolException;
 import me.charlie.sinsprotocol.util.ProtocolPacketLogger;
 
@@ -131,7 +132,7 @@ public final class SinsClient {
     }
 
     //Completes mutual authentication after checking SERVER_AUTH MAC and proof value.
-    public void handleServerAuth(me.charlie.sinsprotocol.protocol.message.ServerAuthMessage serverAuthMessage) {
+    public void handleServerAuth(ServerAuthMessage serverAuthMessage) {
         packetLogger.incoming(serverAuthMessage);
         requireState(ClientState.WAITING_FOR_SERVER_AUTH);
         validateSession(serverAuthMessage.sessionId(), serverAuthMessage.version());
@@ -149,6 +150,21 @@ public final class SinsClient {
 
         nextServerSequenceNumber++;
         state = ClientState.CONNECTED;
+    }
+
+    public void handleServerClose(CloseMessage closeMessage) {
+        packetLogger.incoming(closeMessage);
+        validateSession(closeMessage.sessionId(), closeMessage.version());
+        validateSequence(closeMessage.sequenceNumber(), nextServerSequenceNumber, "server");
+        int expectedEpoch = closeEpoch(closeMessage.sequenceNumber());
+        validateEpoch(closeMessage.epoch(), expectedEpoch);
+        MessageAuthentication.verifyMessageMac(
+                sessionKeys.epoch(closeMessage.epoch()).serverMacKey(),
+                closeMessage,
+                closeMessage.messageMac()
+        );
+        nextServerSequenceNumber++;
+        state = ClientState.CLOSED;
     }
 
     //Creates an authenticated DATA_REQUEST for the next expected sensor reading.
