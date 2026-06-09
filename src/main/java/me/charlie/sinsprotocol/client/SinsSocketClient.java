@@ -28,6 +28,9 @@ public final class SinsSocketClient {
         this.messageReceiver = new SinsClientMessageReceiver(client);
     }
 
+    /**
+     * Opens a socket, completes the handshake, requests readings and sends CLOSE before disconnecting.
+     */
     public List<String> requestReadings(int requestCount) throws IOException {
         List<String> readings = new ArrayList<>();
 
@@ -48,6 +51,9 @@ public final class SinsSocketClient {
         return readings;
     }
 
+    /**
+     * Performs the socket-backed HELLO, HELLO_ACK, CLIENT_AUTH and SERVER_AUTH exchange.
+     */
     private void runHandshake(ProtocolSocketChannel channel) throws IOException {
         channel.writeMessage(client.startHandshake());
         ProtocolMessage helloAck = channel.readMessage()

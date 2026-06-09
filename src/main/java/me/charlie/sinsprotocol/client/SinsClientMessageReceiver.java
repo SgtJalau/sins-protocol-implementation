@@ -5,7 +5,7 @@ import me.charlie.sinsprotocol.protocol.message.DataResponseMessage;
 import me.charlie.sinsprotocol.protocol.message.HelloAckMessage;
 import me.charlie.sinsprotocol.protocol.message.ProtocolMessage;
 import me.charlie.sinsprotocol.protocol.message.ServerAuthMessage;
-import me.charlie.sinsprotocol.protocol.validation.ProtocolException;
+import me.charlie.sinsprotocol.protocol.exception.ProtocolException;
 
 import java.util.Optional;
 
@@ -18,7 +18,9 @@ public final class SinsClientMessageReceiver {
         this.client = client;
     }
 
-    //Dispatches received server messages and returns the next client packet when the protocol requires one.
+    /**
+     * Dispatches a received server message and returns the next client packet when the protocol requires one.
+     */
     public Optional<ProtocolMessage> receive(ProtocolMessage message) {
         return switch (message) {
             case HelloAckMessage helloAckMessage -> Optional.of(client.handleHelloAck(helloAckMessage));

@@ -18,7 +18,7 @@ import me.charlie.sinsprotocol.protocol.message.HelloAckMessage;
 import me.charlie.sinsprotocol.protocol.message.HelloMessage;
 import me.charlie.sinsprotocol.protocol.message.ProtocolConstants;
 import me.charlie.sinsprotocol.protocol.message.ServerAuthMessage;
-import me.charlie.sinsprotocol.protocol.validation.ProtocolException;
+import me.charlie.sinsprotocol.protocol.exception.ProtocolException;
 import me.charlie.sinsprotocol.util.ProtocolPacketLogger;
 
 import java.security.KeyPair;
@@ -32,10 +32,12 @@ public final class SinsServer {
     private final byte[] preSharedKey;
     private final SensorReadingProvider sensorReadingProvider;
     private final ProtocolPacketLogger packetLogger;
+
     private KeyPair keyPair;
     private HelloMessage helloMessage;
     private HelloAckMessage helloAckMessage;
     private SessionKeys sessionKeys;
+
     private ServerState state = ServerState.NEW;
     private long nextClientSequenceNumber = 1;
     private long nextServerSequenceNumber = 1;
@@ -53,12 +55,18 @@ public final class SinsServer {
         this(preSharedKey, sensorReadingProvider, false);
     }
 
+    /**
+     * Creates a server session. Showcase logging prints protocol packets for demos, but does not change protocol behavior.
+     */
     public SinsServer(String preSharedKey, SensorReadingProvider sensorReadingProvider, boolean showcaseLoggingEnabled) {
         this.preSharedKey = ProtocolEncoding.utf8(Objects.requireNonNull(preSharedKey, "preSharedKey"));
         this.sensorReadingProvider = Objects.requireNonNull(sensorReadingProvider, "sensorReadingProvider");
         this.packetLogger = new ProtocolPacketLogger("SERVER", showcaseLoggingEnabled, LOGGER);
     }
 
+    /**
+     * Enables or disables packet logging for demo output.
+     */
     public void setShowcaseLoggingEnabled(boolean showcaseLoggingEnabled) {
         packetLogger.setEnabled(showcaseLoggingEnabled);
     }
@@ -67,15 +75,23 @@ public final class SinsServer {
         return packetLogger.isEnabled();
     }
 
+    /**
+     * Controls whether logged packet JSON is compact or formatted across multiple lines.
+     */
     public void setPrettyPrintPacketLogs(boolean prettyPrintPacketLogs) {
         packetLogger.setPrettyPrintJson(prettyPrintPacketLogs);
     }
 
+    /**
+     * Controls whether logged packet JSON is wrapped in ANSI color codes.
+     */
     public void setColorizePacketLogs(boolean colorizePacketLogs) {
         packetLogger.setColorizeJson(colorizePacketLogs);
     }
 
-    //Accepts a new HELLO and returns HELLO_ACK with the server key share.
+    /**
+     * Accepts a new HELLO, derives initial keys and returns HELLO_ACK with the server key share.
+     */
     public HelloAckMessage handleHello(HelloMessage receivedHelloMessage) {
         packetLogger.incoming(receivedHelloMessage);
         requireState(ServerState.NEW);
@@ -103,7 +119,9 @@ public final class SinsServer {
         return helloAckMessage;
     }
 
-    //Verifies CLIENT_AUTH and returns SERVER_AUTH to complete mutual authentication.
+    /**
+     * Verifies CLIENT_AUTH and returns SERVER_AUTH to complete mutual authentication.
+     */
     public ServerAuthMessage handleClientAuth(ClientAuthMessage clientAuthMessage) {
         packetLogger.incoming(clientAuthMessage);
         requireState(ServerState.WAITING_FOR_CLIENT_AUTH);
@@ -147,7 +165,9 @@ public final class SinsServer {
         return serverAuthMessage;
     }
 
-    //Validates DATA_REQUEST and returns one encrypted DATA_RESPONSE.
+    /**
+     * Validates DATA_REQUEST and returns one encrypted DATA_RESPONSE.
+     */
     public DataResponseMessage handleDataRequest(DataRequestMessage dataRequestMessage) {
         packetLogger.incoming(dataRequestMessage);
         requireState(ServerState.CONNECTED);
@@ -201,6 +221,9 @@ public final class SinsServer {
         return dataResponseMessage;
     }
 
+    /**
+     * Creates an authenticated CLOSE packet from the current server sequence number.
+     */
     public CloseMessage createClose(CloseReason closeReason) {
         requireConnectedOrHandshake();
         int epoch = closeEpoch(nextServerSequenceNumber);
@@ -227,6 +250,9 @@ public final class SinsServer {
         return closeMessage;
     }
 
+    /**
+     * Accepts an authenticated client-side close packet and marks the server session closed.
+     */
     public void handleClientClose(CloseMessage closeMessage) {
         packetLogger.incoming(closeMessage);
         validateSession(closeMessage.sessionId(), closeMessage.version());
@@ -291,6 +317,7 @@ public final class SinsServer {
         return sequenceNumber - 2;
     }
 
+    //CLOSE can happen before data exchange, so early close packets still use epoch 0.
     private int closeEpoch(long sequenceNumber) {
         if (sequenceNumber < ProtocolConstants.FIRST_DATA_SEQUENCE_NUMBER) {
             return 0;

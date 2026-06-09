@@ -24,6 +24,9 @@ public final class ProtocolSocketChannel implements AutoCloseable {
         this.writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
     }
 
+    /**
+     * Reads one newline-delimited JSON packet from the socket.
+     */
     public Optional<ProtocolMessage> readMessage() throws IOException {
         String line = reader.readLine();
         if (line == null) {
@@ -32,6 +35,9 @@ public final class ProtocolSocketChannel implements AutoCloseable {
         return Optional.of(ProtocolMessageCodec.decode(line));
     }
 
+    /**
+     * Writes one canonical JSON packet followed by a newline.
+     */
     public void writeMessage(ProtocolMessage message) throws IOException {
         writer.write(ProtocolMessageCodec.encode(message));
         writer.newLine();

@@ -34,6 +34,9 @@ public final class SinsSocketServer implements AutoCloseable {
         return serverSocket.getLocalPort();
     }
 
+    /**
+     * Accepts one client connection and processes protocol packets until CLOSE or disconnect.
+     */
     public void serveOneClient() throws IOException {
         try (Socket socket = serverSocket.accept();
              ProtocolSocketChannel channel = new ProtocolSocketChannel(socket)) {
@@ -45,6 +48,9 @@ public final class SinsSocketServer implements AutoCloseable {
         }
     }
 
+    /**
+     * Reads newline-delimited protocol JSON, dispatches it to the server receiver and writes response packets.
+     */
     private void handleMessages(ProtocolSocketChannel channel, SinsServerMessageReceiver messageReceiver) throws IOException {
         while (true) {
             Optional<ProtocolMessage> receivedMessage = channel.readMessage();

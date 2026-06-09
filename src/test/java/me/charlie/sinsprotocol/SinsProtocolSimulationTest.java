@@ -10,7 +10,7 @@ import me.charlie.sinsprotocol.protocol.message.HelloAckMessage;
 import me.charlie.sinsprotocol.protocol.message.HelloMessage;
 import me.charlie.sinsprotocol.protocol.message.ProtocolConstants;
 import me.charlie.sinsprotocol.protocol.message.ServerAuthMessage;
-import me.charlie.sinsprotocol.protocol.validation.ProtocolException;
+import me.charlie.sinsprotocol.protocol.exception.ProtocolException;
 import me.charlie.sinsprotocol.server.SinsServer;
 import me.charlie.sinsprotocol.server.SinsSocketServer;
 import org.junit.jupiter.api.Test;

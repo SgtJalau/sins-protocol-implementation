@@ -5,7 +5,7 @@ import me.charlie.sinsprotocol.protocol.message.CloseMessage;
 import me.charlie.sinsprotocol.protocol.message.DataRequestMessage;
 import me.charlie.sinsprotocol.protocol.message.HelloMessage;
 import me.charlie.sinsprotocol.protocol.message.ProtocolMessage;
-import me.charlie.sinsprotocol.protocol.validation.ProtocolException;
+import me.charlie.sinsprotocol.protocol.exception.ProtocolException;
 
 import java.util.Optional;
 
@@ -17,7 +17,9 @@ public final class SinsServerMessageReceiver {
         this.server = server;
     }
 
-    //Dispatches received client messages and returns the server response packet when one is required.
+    /**
+     * Dispatches a received client message and returns the server response packet when one is required.
+     */
     public Optional<ProtocolMessage> receive(ProtocolMessage message) {
         return switch (message) {
             case HelloMessage helloMessage -> Optional.of(server.handleHello(helloMessage));

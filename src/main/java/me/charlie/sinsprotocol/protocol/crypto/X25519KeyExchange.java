@@ -1,6 +1,6 @@
 package me.charlie.sinsprotocol.protocol.crypto;
 
-import me.charlie.sinsprotocol.protocol.validation.ProtocolException;
+import me.charlie.sinsprotocol.protocol.exception.ProtocolException;
 
 import javax.crypto.KeyAgreement;
 import java.security.GeneralSecurityException;

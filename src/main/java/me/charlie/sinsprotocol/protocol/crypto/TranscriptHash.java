@@ -4,7 +4,7 @@ import me.charlie.sinsprotocol.protocol.codec.ProtocolMessageCodec;
 import me.charlie.sinsprotocol.protocol.message.ClientAuthMessage;
 import me.charlie.sinsprotocol.protocol.message.HelloAckMessage;
 import me.charlie.sinsprotocol.protocol.message.HelloMessage;
-import me.charlie.sinsprotocol.protocol.validation.ProtocolException;
+import me.charlie.sinsprotocol.protocol.exception.ProtocolException;
 
 import java.io.ByteArrayOutputStream;
 import java.security.MessageDigest;

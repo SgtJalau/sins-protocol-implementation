@@ -1,4 +1,4 @@
-package me.charlie.sinsprotocol.protocol.validation;
+package me.charlie.sinsprotocol.protocol.exception;
 
 public class ProtocolException extends RuntimeException {
 

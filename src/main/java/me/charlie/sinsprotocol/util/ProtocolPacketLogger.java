@@ -17,12 +17,17 @@ public final class ProtocolPacketLogger {
     private final String endpointName;
     private final Logger logger;
 
+    //Enabled controls whether packets are logged at all.
     @Getter
     @Setter
     private boolean enabled;
+
+    //Pretty JSON is for readable demos. MACs and transcripts still use canonical compact JSON.
     @Getter
     @Setter
     private boolean prettyPrintJson;
+
+    //Colorized JSON helps separate packet bodies from java.util.logging metadata in console demos.
     @Getter
     @Setter
     private boolean colorizeJson;

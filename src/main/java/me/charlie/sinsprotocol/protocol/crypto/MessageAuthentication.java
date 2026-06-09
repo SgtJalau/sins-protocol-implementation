@@ -2,7 +2,7 @@ package me.charlie.sinsprotocol.protocol.crypto;
 
 import me.charlie.sinsprotocol.protocol.codec.ProtocolMessageCodec;
 import me.charlie.sinsprotocol.protocol.message.ProtocolMessage;
-import me.charlie.sinsprotocol.protocol.validation.ProtocolException;
+import me.charlie.sinsprotocol.protocol.exception.ProtocolException;
 
 import java.security.MessageDigest;
 

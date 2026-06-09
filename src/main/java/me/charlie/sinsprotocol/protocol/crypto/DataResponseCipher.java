@@ -3,7 +3,7 @@ package me.charlie.sinsprotocol.protocol.crypto;
 import me.charlie.sinsprotocol.protocol.codec.ProtocolMessageCodec;
 import me.charlie.sinsprotocol.protocol.message.EncryptedData;
 import me.charlie.sinsprotocol.protocol.message.MessageType;
-import me.charlie.sinsprotocol.protocol.validation.ProtocolException;
+import me.charlie.sinsprotocol.protocol.exception.ProtocolException;
 
 import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
@@ -23,15 +23,7 @@ public final class DataResponseCipher {
     private DataResponseCipher() {
     }
 
-    public static EncryptedData encrypt(
-            byte[] encryptionKey,
-            int epoch,
-            long requestId,
-            long sequenceNumber,
-            String sessionId,
-            int version,
-            String plaintext
-    ) {
+    public static EncryptedData encrypt(byte[] encryptionKey, int epoch, long requestId, long sequenceNumber, String sessionId, int version, String plaintext) {
         byte[] nonce = ProtocolEncoding.dataResponseNonce(epoch, sequenceNumber);
         byte[] encrypted = runCipher(
                 Cipher.ENCRYPT_MODE,
@@ -51,15 +43,7 @@ public final class DataResponseCipher {
         );
     }
 
-    public static String decrypt(
-            byte[] encryptionKey,
-            int epoch,
-            long requestId,
-            long sequenceNumber,
-            String sessionId,
-            int version,
-            EncryptedData encryptedData
-    ) {
+    public static String decrypt(byte[] encryptionKey, int epoch, long requestId, long sequenceNumber, String sessionId, int version, EncryptedData encryptedData) {
         byte[] ciphertext = ProtocolEncoding.decodeBase64Url(encryptedData.ciphertext());
         byte[] tag = ProtocolEncoding.decodeBase64Url(encryptedData.tag());
         byte[] receivedNonce = ProtocolEncoding.decodeBase64Url(encryptedData.nonce());
