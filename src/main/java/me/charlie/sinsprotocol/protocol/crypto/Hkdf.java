@@ -8,6 +8,9 @@ import java.io.ByteArrayOutputStream;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 
+/**
+ * HKDF and HMAC-SHA256 helpers used by the protocol key schedule.
+ */
 public final class Hkdf {
 
     private static final String HMAC_SHA256 = "HmacSHA256";
@@ -16,10 +19,25 @@ public final class Hkdf {
     private Hkdf() {
     }
 
+    /**
+     * Performs HKDF-Extract using HMAC-SHA256.
+     *
+     * @param salt salt key, for example the PSK or handshake secret.
+     * @param inputKeyMaterial input material, for example the Diffie-Hellman secret or transcript hash.
+     * @return 32-byte pseudorandom key.
+     */
     public static byte[] extract(byte[] salt, byte[] inputKeyMaterial) {
         return hmac(salt, inputKeyMaterial);
     }
 
+    /**
+     * Performs HKDF-Expand using HMAC-SHA256.
+     *
+     * @param pseudoRandomKey key from HKDF-Extract or previous expansion step.
+     * @param info context label that separates derived keys by purpose.
+     * @param length requested output length in bytes.
+     * @return derived key bytes of the requested length.
+     */
     public static byte[] expand(byte[] pseudoRandomKey, String info, int length) {
         if (length <= 0) {
             throw new IllegalArgumentException("HKDF output length must be positive");
@@ -46,6 +64,13 @@ public final class Hkdf {
         return Arrays.copyOf(output.toByteArray(), length);
     }
 
+    /**
+     * Computes HMAC-SHA256.
+     *
+     * @param key MAC key.
+     * @param data data to authenticate.
+     * @return raw HMAC bytes.
+     */
     public static byte[] hmac(byte[] key, byte[] data) {
         try {
             Mac mac = Mac.getInstance(HMAC_SHA256);

@@ -22,7 +22,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-//Encodes and decodes protocol messages using stable JSON for transcript hashing and MAC input.
+/**
+ * Encodes and decodes protocol messages using stable JSON for transcript hashing and MAC input.
+ */
 public final class ProtocolMessageCodec {
 
     //Canonical object mapper for json, so that items are always serialized in same standard, alphabetical order, so macs match on client and server
@@ -36,29 +38,52 @@ public final class ProtocolMessageCodec {
     private ProtocolMessageCodec() {
     }
 
-    //Serializes a typed message to canonical JSON with sorted object keys.
+    /**
+     * Serializes a typed message to canonical JSON with sorted object keys.
+     *
+     * @param message protocol message.
+     * @return compact canonical JSON.
+     */
     public static String encode(ProtocolMessage message) {
         return canonicalJson(message.toFields());
     }
 
-    //Serializes a typed message for human-readable logs while preserving sorted field order.
+    /**
+     * Serializes a typed message for human-readable logs while preserving sorted field order.
+     *
+     * @param message protocol message.
+     * @return pretty-printed JSON.
+     */
     public static String encodePretty(ProtocolMessage message) {
         return prettyJson(message.toFields());
     }
 
-    //Returns UTF-8 bytes for hashing and transcript construction.
+    /**
+     * @param message protocol message.
+     * @return UTF-8 canonical JSON bytes for hashing and transcript construction.
+     */
     public static byte[] canonicalBytes(ProtocolMessage message) {
         return encode(message).getBytes(StandardCharsets.UTF_8);
     }
 
-    //Returns the canonical MAC input. The msg-mac field itself is excluded by protocol design.
+    /**
+     * Returns the canonical MAC input. The msg-mac field itself is excluded by protocol design.
+     *
+     * @param message protocol message.
+     * @return UTF-8 canonical JSON bytes without msg-mac.
+     */
     public static byte[] canonicalBytesWithoutMessageMac(ProtocolMessage message) {
         Map<String, Object> fields = new LinkedHashMap<>(message.toFields());
         fields.remove(ProtocolConstants.MESSAGE_MAC_FIELD);
         return canonicalJson(fields).getBytes(StandardCharsets.UTF_8);
     }
 
-    //Parses JSON into the concrete message type selected by the msg-type field.
+    /**
+     * Parses JSON into the concrete message type selected by the msg-type field.
+     *
+     * @param json received protocol JSON.
+     * @return typed protocol message.
+     */
     public static ProtocolMessage decode(String json) {
         Map<String, Object> fields = readFields(json);
         MessageType messageType = MessageType.valueOf(MessageFieldReader.requiredString(fields, "msg-type"));
@@ -74,7 +99,12 @@ public final class ProtocolMessageCodec {
         };
     }
 
-    //Serializes field maps deterministically so both endpoints sign and hash identical bytes.
+    /**
+     * Serializes field maps deterministically so both endpoints sign and hash identical bytes.
+     *
+     * @param fields wire fields.
+     * @return compact canonical JSON.
+     */
     public static String canonicalJson(Map<String, Object> fields) {
         try {
             return OBJECT_MAPPER.writeValueAsString(fields);
@@ -83,7 +113,12 @@ public final class ProtocolMessageCodec {
         }
     }
 
-    //Pretty JSON is only for logging or demos. Protocol hashes and MACs must use canonicalJson.
+    /**
+     * Pretty JSON is only for logging or demos. Protocol hashes and MACs must use canonicalJson.
+     *
+     * @param fields wire fields.
+     * @return pretty-printed JSON.
+     */
     public static String prettyJson(Map<String, Object> fields) {
         try {
             return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(fields);

@@ -1,6 +1,7 @@
 package me.charlie.sinsprotocol.server;
 
 import me.charlie.sinsprotocol.client.SinsClient;
+import me.charlie.sinsprotocol.protocol.ProtocolSpec;
 import me.charlie.sinsprotocol.protocol.crypto.DataResponseCipher;
 import me.charlie.sinsprotocol.protocol.crypto.EpochKeys;
 import me.charlie.sinsprotocol.protocol.crypto.MessageAuthentication;
@@ -103,7 +104,7 @@ public final class SinsServer {
         nextClientSequenceNumber++;
         keyPair = X25519KeyExchange.generateKeyPair();
         helloAckMessage = new HelloAckMessage(
-                ProtocolEncoding.randomBase64Url(32),
+                ProtocolEncoding.randomBase64Url(ProtocolSpec.NONCE_BYTES),
                 X25519KeyExchange.encodePublicKey(keyPair.getPublic()),
                 nextServerSequenceNumber,
                 sessionId,

@@ -1,22 +1,9 @@
 package me.charlie.sinsprotocol.client;
 
-import me.charlie.sinsprotocol.protocol.crypto.DataResponseCipher;
-import me.charlie.sinsprotocol.protocol.crypto.EpochKeys;
-import me.charlie.sinsprotocol.protocol.crypto.MessageAuthentication;
-import me.charlie.sinsprotocol.protocol.crypto.ProtocolEncoding;
-import me.charlie.sinsprotocol.protocol.crypto.SessionKeys;
-import me.charlie.sinsprotocol.protocol.crypto.TranscriptHash;
-import me.charlie.sinsprotocol.protocol.crypto.X25519KeyExchange;
-import me.charlie.sinsprotocol.protocol.message.ClientAuthMessage;
-import me.charlie.sinsprotocol.protocol.message.CloseMessage;
-import me.charlie.sinsprotocol.protocol.message.CloseReason;
-import me.charlie.sinsprotocol.protocol.message.DataRequestMessage;
-import me.charlie.sinsprotocol.protocol.message.DataResponseMessage;
-import me.charlie.sinsprotocol.protocol.message.HelloAckMessage;
-import me.charlie.sinsprotocol.protocol.message.HelloMessage;
-import me.charlie.sinsprotocol.protocol.message.ProtocolConstants;
-import me.charlie.sinsprotocol.protocol.message.ServerAuthMessage;
+import me.charlie.sinsprotocol.protocol.ProtocolSpec;
+import me.charlie.sinsprotocol.protocol.crypto.*;
 import me.charlie.sinsprotocol.protocol.exception.ProtocolException;
+import me.charlie.sinsprotocol.protocol.message.*;
 import me.charlie.sinsprotocol.util.ProtocolPacketLogger;
 
 import java.security.KeyPair;
@@ -97,10 +84,10 @@ public final class SinsClient {
     public HelloMessage startHandshake() {
         requireState(ClientState.NEW);
         keyPair = X25519KeyExchange.generateKeyPair();
-        sessionId = ProtocolEncoding.randomBase64Url(16);
+        sessionId = ProtocolEncoding.randomBase64Url(ProtocolSpec.SESSION_ID_BYTES);
         helloMessage = new HelloMessage(
                 X25519KeyExchange.encodePublicKey(keyPair.getPublic()),
-                ProtocolEncoding.randomBase64Url(32),
+                ProtocolEncoding.randomBase64Url(ProtocolSpec.NONCE_BYTES),
                 nextClientSequenceNumber,
                 sessionId,
                 ProtocolConstants.VERSION

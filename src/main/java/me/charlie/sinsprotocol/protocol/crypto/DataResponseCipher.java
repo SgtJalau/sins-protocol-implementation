@@ -15,6 +15,11 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Encrypts and decrypts DATA_RESPONSE payloads with AES-256-GCM.
+ *
+ * The encrypted payload is bound to the visible DATA_RESPONSE header using GCM associated data, so changing fields like request-id, sequence-number or epoch invalidates decryption.
+ */
 public final class DataResponseCipher {
 
     private static final int AUTHENTICATION_TAG_BITS = 128;
@@ -23,6 +28,18 @@ public final class DataResponseCipher {
     private DataResponseCipher() {
     }
 
+    /**
+     * Encrypts plaintext reading for a DATA_RESPONSE message.
+     *
+     * @param encryptionKey server-to-client AES key for the current epoch.
+     * @param epoch current key epoch.
+     * @param requestId id of the DATA_REQUEST this response answers.
+     * @param sequenceNumber server-side response sequence number.
+     * @param sessionId active session id.
+     * @param version protocol version.
+     * @param plaintext data before encryption.
+     * @return encrypted data object containing Base64URL ciphertext, nonce and GCM tag.
+     */
     public static EncryptedData encrypt(byte[] encryptionKey, int epoch, long requestId, long sequenceNumber, String sessionId, int version, String plaintext) {
         byte[] nonce = ProtocolEncoding.dataResponseNonce(epoch, sequenceNumber);
         byte[] encrypted = runCipher(
@@ -32,6 +49,7 @@ public final class DataResponseCipher {
                 associatedData(epoch, requestId, sequenceNumber, sessionId, version),
                 plaintext.getBytes(StandardCharsets.UTF_8)
         );
+
         int ciphertextEnd = encrypted.length - AUTHENTICATION_TAG_BYTES;
         byte[] ciphertext = Arrays.copyOf(encrypted, ciphertextEnd);
         byte[] tag = Arrays.copyOfRange(encrypted, ciphertextEnd, encrypted.length);
@@ -43,11 +61,24 @@ public final class DataResponseCipher {
         );
     }
 
+    /**
+     * Decrypts and authenticates one DATA_RESPONSE payload.
+     *
+     * @param encryptionKey server-to-client AES key for the current epoch.
+     * @param epoch current key epoch.
+     * @param requestId id of the DATA_REQUEST this response answers.
+     * @param sequenceNumber server-side response sequence number.
+     * @param sessionId active session id.
+     * @param version protocol version.
+     * @param encryptedData received encrypted data object.
+     * @return decrypted plaintext.
+     */
     public static String decrypt(byte[] encryptionKey, int epoch, long requestId, long sequenceNumber, String sessionId, int version, EncryptedData encryptedData) {
         byte[] ciphertext = ProtocolEncoding.decodeBase64Url(encryptedData.ciphertext());
         byte[] tag = ProtocolEncoding.decodeBase64Url(encryptedData.tag());
         byte[] receivedNonce = ProtocolEncoding.decodeBase64Url(encryptedData.nonce());
         byte[] expectedNonce = ProtocolEncoding.dataResponseNonce(epoch, sequenceNumber);
+
         if (!Arrays.equals(expectedNonce, receivedNonce)) {
             throw new ProtocolException("Invalid DATA_RESPONSE nonce");
         }
@@ -64,6 +95,7 @@ public final class DataResponseCipher {
                     associatedData(epoch, requestId, sequenceNumber, sessionId, version),
                     encrypted
             );
+
             return new String(plaintext, StandardCharsets.UTF_8);
         } catch (ProtocolException exception) {
             if (exception.getCause() instanceof AEADBadTagException) {
@@ -85,6 +117,16 @@ public final class DataResponseCipher {
         return ProtocolEncoding.utf8(ProtocolMessageCodec.canonicalJson(fields));
     }
 
+    /**
+     * Runs AES-GCM with caller-provided associated data.
+     *
+     * @param mode cipher mode, either encrypt or decrypt.
+     * @param key AES key bytes.
+     * @param nonce 96-bit GCM nonce.
+     * @param associatedData header bytes authenticated by GCM.
+     * @param input plaintext for encryption or ciphertext plus tag for decryption.
+     * @return ciphertext plus tag for encryption, plaintext for decryption.
+     */
     private static byte[] runCipher(int mode, byte[] key, byte[] nonce, byte[] associatedData, byte[] input) {
         try {
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");

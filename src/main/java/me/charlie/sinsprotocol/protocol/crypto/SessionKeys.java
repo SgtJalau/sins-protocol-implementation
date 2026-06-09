@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Holds the derived session keys and lazily derives later epoch keys.
+ */
 public final class SessionKeys {
 
     private final byte[] clientFinishedKey;
@@ -16,6 +19,14 @@ public final class SessionKeys {
         this.epochKeys.add(firstEpochKeys);
     }
 
+    /**
+     * Derives finished keys and epoch 0 keys from the PSK, Diffie-Hellman secret and transcript hash.
+     *
+     * @param preSharedKey installed protocol PSK.
+     * @param diffieHellmanSecret shared X25519 secret.
+     * @param transcriptHash hash of the canonical handshake transcript.
+     * @return complete session key schedule starting at epoch 0.
+     */
     public static SessionKeys derive(byte[] preSharedKey, byte[] diffieHellmanSecret, byte[] transcriptHash) {
         byte[] handshakeSecret = Hkdf.extract(preSharedKey, diffieHellmanSecret);
         byte[] masterSecret = Hkdf.extract(handshakeSecret, transcriptHash);
@@ -28,14 +39,26 @@ public final class SessionKeys {
         );
     }
 
+    /**
+     * @return copy of the client finished key.
+     */
     public byte[] clientFinishedKey() {
         return Arrays.copyOf(clientFinishedKey, clientFinishedKey.length);
     }
 
+    /**
+     * @return copy of the server finished key.
+     */
     public byte[] serverFinishedKey() {
         return Arrays.copyOf(serverFinishedKey, serverFinishedKey.length);
     }
 
+    /**
+     * Returns keys for the requested epoch, deriving intermediate epochs if needed.
+     *
+     * @param epoch requested non-negative epoch number.
+     * @return key material for the requested epoch.
+     */
     public EpochKeys epoch(int epoch) {
         if (epoch < 0) {
             throw new IllegalArgumentException("Epoch must not be negative");
@@ -50,14 +73,16 @@ public final class SessionKeys {
         return epochKeys.get(epoch);
     }
 
+    /**
+     * Derives all purpose-separated keys for one epoch.
+     */
     private static EpochKeys buildEpochKeys(int epoch, byte[] epochSecret) {
         return new EpochKeys(
                 epoch,
                 epochSecret,
                 Hkdf.expand(epochSecret, "client to server MAC key", 32),
                 Hkdf.expand(epochSecret, "server to client MAC key", 32),
-                Hkdf.expand(epochSecret, "server DATA_RESPONSE encryption key", 32),
-                Hkdf.expand(epochSecret, "server DATA_RESPONSE IV", 12)
+                Hkdf.expand(epochSecret, "server DATA_RESPONSE encryption key", 32)
         );
     }
 }
