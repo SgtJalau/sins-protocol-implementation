@@ -2,6 +2,7 @@ package me.charlie.sinsprotocol.server;
 
 import me.charlie.sinsprotocol.protocol.message.ClientAuthMessage;
 import me.charlie.sinsprotocol.protocol.message.CloseMessage;
+import me.charlie.sinsprotocol.protocol.message.CloseReason;
 import me.charlie.sinsprotocol.protocol.message.DataRequestMessage;
 import me.charlie.sinsprotocol.protocol.message.HelloMessage;
 import me.charlie.sinsprotocol.protocol.message.ProtocolMessage;
@@ -31,5 +32,9 @@ public final class SinsServerMessageReceiver {
             }
             default -> throw new ProtocolException("Server cannot receive message type: " + message.messageType());
         };
+    }
+
+    public CloseMessage createCloseForFailure(CloseReason closeReason, ProtocolMessage receivedMessage) {
+        return server.createCloseForFailure(closeReason, receivedMessage);
     }
 }

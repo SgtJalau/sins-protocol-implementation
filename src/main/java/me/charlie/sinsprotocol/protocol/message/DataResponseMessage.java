@@ -8,7 +8,6 @@ public record DataResponseMessage(
         EncryptedData encryptedData,
         int epoch,
         String messageMac,
-        long requestId,
         long sequenceNumber,
         String sessionId,
         int version
@@ -20,12 +19,11 @@ public record DataResponseMessage(
         Objects.requireNonNull(sessionId, "sessionId");
     }
 
-    public DataResponseMessage(EncryptedData encryptedData, String messageMac, long requestId, long sequenceNumber, String sessionId) {
+    public DataResponseMessage(EncryptedData encryptedData, String messageMac, long sequenceNumber, String sessionId) {
         this(
                 encryptedData,
                 ProtocolConstants.epochForDataSequenceNumber(sequenceNumber),
                 messageMac,
-                requestId,
                 sequenceNumber,
                 sessionId,
                 ProtocolConstants.VERSION
@@ -48,7 +46,6 @@ public record DataResponseMessage(
                 messageMac
         );
         fields.put("encrypted-data", encryptedData.toFields());
-        fields.put("request-id", requestId);
         return fields;
     }
 
@@ -58,7 +55,6 @@ public record DataResponseMessage(
                 EncryptedData.fromFields(MessageFieldReader.requiredObject(fields, "encrypted-data")),
                 MessageFieldReader.requiredInt(fields, "epoch"),
                 MessageFieldReader.requiredString(fields, ProtocolConstants.MESSAGE_MAC_FIELD),
-                MessageFieldReader.requiredLong(fields, "request-id"),
                 MessageFieldReader.requiredLong(fields, "sequence-number"),
                 MessageFieldReader.requiredString(fields, "session-id"),
                 MessageFieldReader.requiredInt(fields, "version")

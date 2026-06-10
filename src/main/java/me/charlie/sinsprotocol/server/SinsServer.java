@@ -17,6 +17,7 @@ import me.charlie.sinsprotocol.protocol.message.DataResponseMessage;
 import me.charlie.sinsprotocol.protocol.message.EncryptedData;
 import me.charlie.sinsprotocol.protocol.message.HelloAckMessage;
 import me.charlie.sinsprotocol.protocol.message.HelloMessage;
+import me.charlie.sinsprotocol.protocol.message.ProtocolMessage;
 import me.charlie.sinsprotocol.protocol.message.ProtocolConstants;
 import me.charlie.sinsprotocol.protocol.message.ServerAuthMessage;
 import me.charlie.sinsprotocol.protocol.exception.ProtocolException;
@@ -184,23 +185,20 @@ public final class SinsServer {
                 dataRequestMessage.messageMac()
         );
 
-        long requestId = requestIdFor(dataRequestMessage.sequenceNumber());
         int responseEpoch = ProtocolConstants.epochForDataSequenceNumber(nextServerSequenceNumber);
         EpochKeys responseEpochKeys = sessionKeys.epoch(responseEpoch);
         EncryptedData encryptedData = DataResponseCipher.encrypt(
                 responseEpochKeys.serverEncryptionKey(),
                 responseEpoch,
-                requestId,
                 nextServerSequenceNumber,
                 sessionId,
                 ProtocolConstants.VERSION,
-                sensorReadingProvider.nextReading(requestId)
+                sensorReadingProvider.nextReading()
         );
         DataResponseMessage unsignedResponse = new DataResponseMessage(
                 encryptedData,
                 responseEpoch,
                 "",
-                requestId,
                 nextServerSequenceNumber,
                 sessionId,
                 ProtocolConstants.VERSION
@@ -210,7 +208,6 @@ public final class SinsServer {
                 encryptedData,
                 responseEpoch,
                 messageMac,
-                requestId,
                 nextServerSequenceNumber,
                 sessionId,
                 ProtocolConstants.VERSION
@@ -258,6 +255,11 @@ public final class SinsServer {
         packetLogger.incoming(closeMessage);
         validateSession(closeMessage.sessionId(), closeMessage.version());
         validateSequence(closeMessage.sequenceNumber(), nextClientSequenceNumber, "client");
+        if (sessionKeys == null) {
+            nextClientSequenceNumber++;
+            state = ServerState.CLOSED;
+            return;
+        }
         int expectedEpoch = closeEpoch(closeMessage.sequenceNumber());
         validateEpoch(closeMessage.epoch(), expectedEpoch);
         MessageAuthentication.verifyMessageMac(
@@ -269,6 +271,36 @@ public final class SinsServer {
         state = ServerState.CLOSED;
     }
 
+    /**
+     * Creates the strongest close packet available for a failed socket exchange.
+     */
+    public CloseMessage createCloseForFailure(CloseReason closeReason, ProtocolMessage receivedMessage) {
+        if (sessionKeys != null && (state == ServerState.CONNECTED || state == ServerState.WAITING_FOR_CLIENT_AUTH)) {
+            return createClose(closeReason);
+        }
+
+        String closeSessionId = sessionId;
+        if (closeSessionId == null && receivedMessage != null) {
+            closeSessionId = receivedMessage.sessionId();
+        }
+        if (closeSessionId == null) {
+            closeSessionId = "";
+        }
+
+        CloseMessage closeMessage = new CloseMessage(
+                0,
+                "",
+                closeReason,
+                nextServerSequenceNumber,
+                closeSessionId,
+                ProtocolConstants.VERSION
+        );
+        nextServerSequenceNumber++;
+        state = ServerState.CLOSED;
+        packetLogger.outgoing(closeMessage);
+        return closeMessage;
+    }
+
     public boolean isConnected() {
         return state == ServerState.CONNECTED;
     }
@@ -278,7 +310,7 @@ public final class SinsServer {
     }
 
     private void validateSession(String receivedSessionId, int version) {
-        if (!Objects.equals(sessionId, receivedSessionId)) {
+        if (sessionId != null && !Objects.equals(sessionId, receivedSessionId)) {
             throw new ProtocolException("Session id does not match");
         }
         validateVersion(version);
@@ -312,10 +344,6 @@ public final class SinsServer {
         if (state != ServerState.CONNECTED && state != ServerState.WAITING_FOR_CLIENT_AUTH) {
             throw new ProtocolException("Server cannot close from state " + state);
         }
-    }
-
-    private long requestIdFor(long sequenceNumber) {
-        return sequenceNumber - 2;
     }
 
     //CLOSE can happen before data exchange, so early close packets still use epoch 0.

@@ -7,9 +7,7 @@ import me.charlie.sinsprotocol.protocol.message.*;
 import me.charlie.sinsprotocol.util.ProtocolPacketLogger;
 
 import java.security.KeyPair;
-import java.util.ArrayDeque;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.logging.Logger;
 
 public final class SinsClient {
@@ -19,7 +17,6 @@ public final class SinsClient {
     private static final Logger LOGGER = Logger.getLogger(SinsClient.class.getName());
 
     private final byte[] preSharedKey;
-    private final Queue<Long> outstandingRequestIds = new ArrayDeque<>();
     private final ProtocolPacketLogger packetLogger;
 
     private KeyPair keyPair;
@@ -167,6 +164,11 @@ public final class SinsClient {
         packetLogger.incoming(closeMessage);
         validateSession(closeMessage.sessionId(), closeMessage.version());
         validateSequence(closeMessage.sequenceNumber(), nextServerSequenceNumber, "server");
+        if (sessionKeys == null) {
+            nextServerSequenceNumber++;
+            state = ClientState.CLOSED;
+            return;
+        }
         int expectedEpoch = closeEpoch(closeMessage.sequenceNumber());
         validateEpoch(closeMessage.epoch(), expectedEpoch);
         MessageAuthentication.verifyMessageMac(
@@ -199,7 +201,6 @@ public final class SinsClient {
                 sessionId,
                 ProtocolConstants.VERSION
         );
-        outstandingRequestIds.add(requestIdFor(dataRequestMessage.sequenceNumber()));
         nextClientSequenceNumber++;
         packetLogger.outgoing(dataRequestMessage);
         return dataRequestMessage;
@@ -215,21 +216,18 @@ public final class SinsClient {
         validateSequence(dataResponseMessage.sequenceNumber(), nextServerSequenceNumber, "server");
         int expectedEpoch = ProtocolConstants.epochForDataSequenceNumber(dataResponseMessage.sequenceNumber());
         validateEpoch(dataResponseMessage.epoch(), expectedEpoch);
-        validateOutstandingRequest(dataResponseMessage.requestId());
 
         EpochKeys epochKeys = sessionKeys.epoch(dataResponseMessage.epoch());
         MessageAuthentication.verifyMessageMac(epochKeys.serverMacKey(), dataResponseMessage, dataResponseMessage.messageMac());
         String plaintext = DataResponseCipher.decrypt(
                 epochKeys.serverEncryptionKey(),
                 dataResponseMessage.epoch(),
-                dataResponseMessage.requestId(),
                 dataResponseMessage.sequenceNumber(),
                 dataResponseMessage.sessionId(),
                 dataResponseMessage.version(),
                 dataResponseMessage.encryptedData()
         );
 
-        outstandingRequestIds.remove();
         nextServerSequenceNumber++;
         return plaintext;
     }
@@ -263,19 +261,34 @@ public final class SinsClient {
         return closeMessage;
     }
 
+    /**
+     * Creates the strongest close packet available for a failed socket exchange.
+     */
+    public CloseMessage createCloseForFailure(CloseReason closeReason) {
+        if (sessionKeys != null && (state == ClientState.CONNECTED || state == ClientState.WAITING_FOR_SERVER_AUTH)) {
+            return createClose(closeReason);
+        }
+
+        CloseMessage closeMessage = new CloseMessage(
+                0,
+                "",
+                closeReason,
+                nextClientSequenceNumber,
+                sessionId,
+                ProtocolConstants.VERSION
+        );
+        nextClientSequenceNumber++;
+        state = ClientState.CLOSED;
+        packetLogger.outgoing(closeMessage);
+        return closeMessage;
+    }
+
     public boolean isConnected() {
         return state == ClientState.CONNECTED;
     }
 
     public String sessionId() {
         return sessionId;
-    }
-
-    private void validateOutstandingRequest(long requestId) {
-        Long expectedRequestId = outstandingRequestIds.peek();
-        if (expectedRequestId == null || expectedRequestId != requestId) {
-            throw new ProtocolException("DATA_RESPONSE does not match an outstanding DATA_REQUEST");
-        }
     }
 
     //Session id, version, sequence number and epoch are checked separately so protocol errors are easier to diagnose.
@@ -310,10 +323,6 @@ public final class SinsClient {
         if (state != ClientState.CONNECTED && state != ClientState.WAITING_FOR_SERVER_AUTH) {
             throw new ProtocolException("Client cannot close from state " + state);
         }
-    }
-
-    private long requestIdFor(long sequenceNumber) {
-        return sequenceNumber - 2;
     }
 
     //CLOSE can happen before data exchange, so early close packets still use epoch 0.

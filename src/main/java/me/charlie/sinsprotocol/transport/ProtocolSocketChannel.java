@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.time.Duration;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
@@ -22,6 +23,20 @@ public final class ProtocolSocketChannel implements AutoCloseable {
         this.socket = socket;
         this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         this.writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Sets the maximum time a blocking read waits for the next packet.
+     */
+    public void setReadTimeout(Duration timeout) throws IOException {
+        socket.setSoTimeout(Math.toIntExact(timeout.toMillis()));
+    }
+
+    /**
+     * Clears the read timeout so reads can block normally again.
+     */
+    public void clearReadTimeout() throws IOException {
+        socket.setSoTimeout(0);
     }
 
     /**

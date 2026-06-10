@@ -21,6 +21,7 @@ import java.util.logging.SimpleFormatter;
 public final class SinsProtocolDemo {
 
     private static final Logger LOGGER = Logger.getLogger(SinsProtocolDemo.class.getName());
+    private static int nextReadingNumber = 1;
 
     private SinsProtocolDemo() {
     }
@@ -44,7 +45,7 @@ public final class SinsProtocolDemo {
 
             LOGGER.info("Starting SINS protocol socket demo on port " + server.port());
             SinsSocketClient socketClient = new SinsSocketClient("localhost", server.port(), client);
-            List<String> readings = socketClient.requestReadings(3);
+            List<String> readings = socketClient.requestReadings(11);
             serverThread.join(5_000);
 
             if (serverFailure.get() != null) {
@@ -74,8 +75,8 @@ public final class SinsProtocolDemo {
     /**
      * Provides deterministic sensor readings so the demo output is easy to follow.
      */
-    private static String sensorReadingFor(long requestId) {
-        return switch ((int) requestId) {
+    private static String sensorReadingFor() {
+        return switch (nextReadingNumber++) {
             case 1 -> "temperature=21.5C";
             case 2 -> "humidity=43%";
             case 3 -> "air-quality=good";

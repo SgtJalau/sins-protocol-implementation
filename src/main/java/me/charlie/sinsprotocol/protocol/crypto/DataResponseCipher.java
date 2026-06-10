@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * Encrypts and decrypts DATA_RESPONSE payloads with AES-256-GCM.
  *
- * The encrypted payload is bound to the visible DATA_RESPONSE header using GCM associated data, so changing fields like request-id, sequence-number or epoch invalidates decryption.
+ * The encrypted payload is bound to the visible DATA_RESPONSE header using GCM associated data, so changing fields like sequence-number or epoch invalidates decryption.
  */
 public final class DataResponseCipher {
 
@@ -33,20 +33,19 @@ public final class DataResponseCipher {
      *
      * @param encryptionKey server-to-client AES key for the current epoch.
      * @param epoch current key epoch.
-     * @param requestId id of the DATA_REQUEST this response answers.
      * @param sequenceNumber server-side response sequence number.
      * @param sessionId active session id.
      * @param version protocol version.
      * @param plaintext data before encryption.
      * @return encrypted data object containing Base64URL ciphertext, nonce and GCM tag.
      */
-    public static EncryptedData encrypt(byte[] encryptionKey, int epoch, long requestId, long sequenceNumber, String sessionId, int version, String plaintext) {
+    public static EncryptedData encrypt(byte[] encryptionKey, int epoch, long sequenceNumber, String sessionId, int version, String plaintext) {
         byte[] nonce = ProtocolEncoding.dataResponseNonce(epoch, sequenceNumber);
         byte[] encrypted = runCipher(
                 Cipher.ENCRYPT_MODE,
                 encryptionKey,
                 nonce,
-                associatedData(epoch, requestId, sequenceNumber, sessionId, version),
+                associatedData(epoch, sequenceNumber, sessionId, version),
                 plaintext.getBytes(StandardCharsets.UTF_8)
         );
 
@@ -66,14 +65,13 @@ public final class DataResponseCipher {
      *
      * @param encryptionKey server-to-client AES key for the current epoch.
      * @param epoch current key epoch.
-     * @param requestId id of the DATA_REQUEST this response answers.
      * @param sequenceNumber server-side response sequence number.
      * @param sessionId active session id.
      * @param version protocol version.
      * @param encryptedData received encrypted data object.
      * @return decrypted plaintext.
      */
-    public static String decrypt(byte[] encryptionKey, int epoch, long requestId, long sequenceNumber, String sessionId, int version, EncryptedData encryptedData) {
+    public static String decrypt(byte[] encryptionKey, int epoch, long sequenceNumber, String sessionId, int version, EncryptedData encryptedData) {
         byte[] ciphertext = ProtocolEncoding.decodeBase64Url(encryptedData.ciphertext());
         byte[] tag = ProtocolEncoding.decodeBase64Url(encryptedData.tag());
         byte[] receivedNonce = ProtocolEncoding.decodeBase64Url(encryptedData.nonce());
@@ -92,7 +90,7 @@ public final class DataResponseCipher {
                     Cipher.DECRYPT_MODE,
                     encryptionKey,
                     receivedNonce,
-                    associatedData(epoch, requestId, sequenceNumber, sessionId, version),
+                    associatedData(epoch, sequenceNumber, sessionId, version),
                     encrypted
             );
 
@@ -106,11 +104,10 @@ public final class DataResponseCipher {
     }
 
     //AAD binds the encrypted bytes to the visible DATA_RESPONSE header.
-    private static byte[] associatedData(int epoch, long requestId, long sequenceNumber, String sessionId, int version) {
+    private static byte[] associatedData(int epoch, long sequenceNumber, String sessionId, int version) {
         Map<String, Object> fields = new LinkedHashMap<>();
         fields.put("epoch", epoch);
         fields.put("msg-type", MessageType.DATA_RESPONSE.name());
-        fields.put("request-id", requestId);
         fields.put("sequence-number", sequenceNumber);
         fields.put("session-id", sessionId);
         fields.put("version", version);
