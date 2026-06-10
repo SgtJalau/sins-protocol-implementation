@@ -24,7 +24,7 @@ public final class MessageFieldReader {
         return Math.toIntExact(value);
     }
 
-    //Reads sequence/request identifiers without silently accepting missing or non-numeric values.
+    //Reads sequence identifiers without silently accepting missing or non-numeric values.
     public static long requiredLong(Map<String, Object> fields, String fieldName) {
         Object value = required(fields, fieldName);
         if (value instanceof Number numberValue) {
