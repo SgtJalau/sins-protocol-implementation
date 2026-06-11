@@ -18,10 +18,6 @@ public record HelloMessage(
         Objects.requireNonNull(sessionId, "sessionId");
     }
 
-    public HelloMessage(String clientKeyShare, String nonceC, String sessionId) {
-        this(clientKeyShare, nonceC, ProtocolConstants.FIRST_SEQUENCE_NUMBER, sessionId, ProtocolConstants.VERSION);
-    }
-
     @Override
     public MessageType messageType() {
         return MessageType.HELLO;

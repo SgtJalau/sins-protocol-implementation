@@ -19,10 +19,6 @@ public record CloseMessage(
         Objects.requireNonNull(sessionId, "sessionId");
     }
 
-    public CloseMessage(int epoch, String messageMac, CloseReason reason, long sequenceNumber, String sessionId) {
-        this(epoch, messageMac, reason, sequenceNumber, sessionId, ProtocolConstants.VERSION);
-    }
-
     @Override
     public MessageType messageType() {
         return MessageType.CLOSE;

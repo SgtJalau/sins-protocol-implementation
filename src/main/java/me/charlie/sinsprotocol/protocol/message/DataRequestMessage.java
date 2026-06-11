@@ -17,10 +17,6 @@ public record DataRequestMessage(
         Objects.requireNonNull(sessionId, "sessionId");
     }
 
-    public DataRequestMessage(String messageMac, long sequenceNumber, String sessionId) {
-        this(ProtocolConstants.epochForDataSequenceNumber(sequenceNumber), messageMac, sequenceNumber, sessionId, ProtocolConstants.VERSION);
-    }
-
     @Override
     public MessageType messageType() {
         return MessageType.DATA_REQUEST;

@@ -19,10 +19,6 @@ public record ClientAuthMessage(
         Objects.requireNonNull(sessionId, "sessionId");
     }
 
-    public ClientAuthMessage(String authValue, String messageMac, String sessionId) {
-        this(authValue, 0, messageMac, 2, sessionId, ProtocolConstants.VERSION);
-    }
-
     @Override
     public MessageType messageType() {
         return MessageType.CLIENT_AUTH;

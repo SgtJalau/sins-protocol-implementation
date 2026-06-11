@@ -50,9 +50,11 @@ public final class SinsSocketClient {
 
         try (Socket socket = new Socket(host, port);
              ProtocolSocketChannel channel = new ProtocolSocketChannel(socket)) {
+
             if (!runHandshake(channel)) {
                 return readings;
             }
+
             try {
                 for (int index = 0; index < requestCount; index++) {
                     if (requestOneReading(channel, readings)) {
@@ -63,17 +65,11 @@ public final class SinsSocketClient {
                 sendCloseIgnoringFailure(channel, CloseReason.PROTOCOL_ERROR);
                 throw exception;
             }
+
             sendClose(channel, CloseReason.NORMAL_SHUTDOWN);
         }
 
         return readings;
-    }
-
-    /**
-     * Runs the default client mode: request readings every 30 seconds for 30 minutes, then close normally.
-     */
-    public List<String> requestReadingsForDefaultSession() throws IOException {
-        return requestReadingsFor(DEFAULT_SESSION_DURATION, DEFAULT_REQUEST_INTERVAL);
     }
 
     /**

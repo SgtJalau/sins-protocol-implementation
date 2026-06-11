@@ -19,17 +19,6 @@ public record DataResponseMessage(
         Objects.requireNonNull(sessionId, "sessionId");
     }
 
-    public DataResponseMessage(EncryptedData encryptedData, String messageMac, long sequenceNumber, String sessionId) {
-        this(
-                encryptedData,
-                ProtocolConstants.epochForDataSequenceNumber(sequenceNumber),
-                messageMac,
-                sequenceNumber,
-                sessionId,
-                ProtocolConstants.VERSION
-        );
-    }
-
     @Override
     public MessageType messageType() {
         return MessageType.DATA_RESPONSE;

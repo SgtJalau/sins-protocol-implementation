@@ -18,10 +18,6 @@ public record HelloAckMessage(
         Objects.requireNonNull(sessionId, "sessionId");
     }
 
-    public HelloAckMessage(String nonceS, String serverKeyShare, String sessionId) {
-        this(nonceS, serverKeyShare, ProtocolConstants.FIRST_SEQUENCE_NUMBER, sessionId, ProtocolConstants.VERSION);
-    }
-
     @Override
     public MessageType messageType() {
         return MessageType.HELLO_ACK;

@@ -195,6 +195,7 @@ public final class SinsServer {
                 ProtocolConstants.VERSION,
                 sensorReadingProvider.nextReading()
         );
+
         DataResponseMessage unsignedResponse = new DataResponseMessage(
                 encryptedData,
                 responseEpoch,
@@ -203,6 +204,7 @@ public final class SinsServer {
                 sessionId,
                 ProtocolConstants.VERSION
         );
+
         String messageMac = MessageAuthentication.messageMac(responseEpochKeys.serverMacKey(), unsignedResponse);
         DataResponseMessage dataResponseMessage = new DataResponseMessage(
                 encryptedData,
@@ -225,6 +227,7 @@ public final class SinsServer {
     public CloseMessage createClose(CloseReason closeReason) {
         requireConnectedOrHandshake();
         int epoch = closeEpoch(nextServerSequenceNumber);
+
         CloseMessage unsignedCloseMessage = new CloseMessage(
                 epoch,
                 "",
@@ -233,6 +236,7 @@ public final class SinsServer {
                 sessionId,
                 ProtocolConstants.VERSION
         );
+
         String messageMac = MessageAuthentication.messageMac(sessionKeys.epoch(epoch).serverMacKey(), unsignedCloseMessage);
         CloseMessage closeMessage = new CloseMessage(
                 epoch,
@@ -242,6 +246,7 @@ public final class SinsServer {
                 sessionId,
                 ProtocolConstants.VERSION
         );
+
         nextServerSequenceNumber++;
         state = ServerState.CLOSED;
         packetLogger.outgoing(closeMessage);
@@ -255,11 +260,13 @@ public final class SinsServer {
         packetLogger.incoming(closeMessage);
         validateSession(closeMessage.sessionId(), closeMessage.version());
         validateSequence(closeMessage.sequenceNumber(), nextClientSequenceNumber, "client");
+
         if (sessionKeys == null) {
             nextClientSequenceNumber++;
             state = ServerState.CLOSED;
             return;
         }
+
         int expectedEpoch = closeEpoch(closeMessage.sequenceNumber());
         validateEpoch(closeMessage.epoch(), expectedEpoch);
         MessageAuthentication.verifyMessageMac(
@@ -283,6 +290,7 @@ public final class SinsServer {
         if (closeSessionId == null && receivedMessage != null) {
             closeSessionId = receivedMessage.sessionId();
         }
+
         if (closeSessionId == null) {
             closeSessionId = "";
         }
@@ -295,6 +303,7 @@ public final class SinsServer {
                 closeSessionId,
                 ProtocolConstants.VERSION
         );
+
         nextServerSequenceNumber++;
         state = ServerState.CLOSED;
         packetLogger.outgoing(closeMessage);
@@ -313,6 +322,7 @@ public final class SinsServer {
         if (sessionId != null && !Objects.equals(sessionId, receivedSessionId)) {
             throw new ProtocolException("Session id does not match");
         }
+
         validateVersion(version);
     }
 
@@ -351,6 +361,7 @@ public final class SinsServer {
         if (sequenceNumber < ProtocolConstants.FIRST_DATA_SEQUENCE_NUMBER) {
             return 0;
         }
+
         return ProtocolConstants.epochForDataSequenceNumber(sequenceNumber);
     }
 

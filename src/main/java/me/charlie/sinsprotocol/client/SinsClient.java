@@ -119,6 +119,7 @@ public final class SinsClient {
                 sessionId,
                 ProtocolConstants.VERSION
         );
+
         String messageMac = MessageAuthentication.messageMac(sessionKeys.epoch(0).clientMacKey(), unsignedClientAuthMessage);
         clientAuthMessage = new ClientAuthMessage(
                 authValue,
@@ -128,6 +129,8 @@ public final class SinsClient {
                 sessionId,
                 ProtocolConstants.VERSION
         );
+
+
         nextClientSequenceNumber++;
         state = ClientState.WAITING_FOR_SERVER_AUTH;
         packetLogger.outgoing(clientAuthMessage);
@@ -147,6 +150,7 @@ public final class SinsClient {
         EpochKeys epochKeys = sessionKeys.epoch(0);
         MessageAuthentication.verifyMessageMac(epochKeys.serverMacKey(), serverAuthMessage, serverAuthMessage.messageMac());
         byte[] transcriptHash = TranscriptHash.withClientAuth(helloMessage, helloAckMessage, clientAuthMessage);
+
         MessageAuthentication.verifyAuthenticationValue(
                 sessionKeys.serverFinishedKey(),
                 transcriptHash,
@@ -164,18 +168,22 @@ public final class SinsClient {
         packetLogger.incoming(closeMessage);
         validateSession(closeMessage.sessionId(), closeMessage.version());
         validateSequence(closeMessage.sequenceNumber(), nextServerSequenceNumber, "server");
+
         if (sessionKeys == null) {
             nextServerSequenceNumber++;
             state = ClientState.CLOSED;
             return;
         }
+
         int expectedEpoch = closeEpoch(closeMessage.sequenceNumber());
         validateEpoch(closeMessage.epoch(), expectedEpoch);
+
         MessageAuthentication.verifyMessageMac(
                 sessionKeys.epoch(closeMessage.epoch()).serverMacKey(),
                 closeMessage,
                 closeMessage.messageMac()
         );
+
         nextServerSequenceNumber++;
         state = ClientState.CLOSED;
     }
@@ -186,6 +194,7 @@ public final class SinsClient {
     public DataRequestMessage createDataRequest() {
         requireState(ClientState.CONNECTED);
         int epoch = ProtocolConstants.epochForDataSequenceNumber(nextClientSequenceNumber);
+
         DataRequestMessage unsignedMessage = new DataRequestMessage(
                 epoch,
                 "",
@@ -193,6 +202,7 @@ public final class SinsClient {
                 sessionId,
                 ProtocolConstants.VERSION
         );
+
         String messageMac = MessageAuthentication.messageMac(sessionKeys.epoch(epoch).clientMacKey(), unsignedMessage);
         DataRequestMessage dataRequestMessage = new DataRequestMessage(
                 epoch,
@@ -201,6 +211,7 @@ public final class SinsClient {
                 sessionId,
                 ProtocolConstants.VERSION
         );
+
         nextClientSequenceNumber++;
         packetLogger.outgoing(dataRequestMessage);
         return dataRequestMessage;
@@ -219,6 +230,7 @@ public final class SinsClient {
 
         EpochKeys epochKeys = sessionKeys.epoch(dataResponseMessage.epoch());
         MessageAuthentication.verifyMessageMac(epochKeys.serverMacKey(), dataResponseMessage, dataResponseMessage.messageMac());
+
         String plaintext = DataResponseCipher.decrypt(
                 epochKeys.serverEncryptionKey(),
                 dataResponseMessage.epoch(),
@@ -246,6 +258,7 @@ public final class SinsClient {
                 sessionId,
                 ProtocolConstants.VERSION
         );
+
         String messageMac = MessageAuthentication.messageMac(sessionKeys.epoch(epoch).clientMacKey(), unsignedCloseMessage);
         CloseMessage closeMessage = new CloseMessage(
                 epoch,
@@ -255,6 +268,7 @@ public final class SinsClient {
                 sessionId,
                 ProtocolConstants.VERSION
         );
+
         nextClientSequenceNumber++;
         state = ClientState.CLOSED;
         packetLogger.outgoing(closeMessage);
@@ -296,6 +310,7 @@ public final class SinsClient {
         if (!Objects.equals(sessionId, receivedSessionId)) {
             throw new ProtocolException("Session id does not match");
         }
+
         if (version != ProtocolConstants.VERSION) {
             throw new ProtocolException("Unsupported protocol version: " + version);
         }
@@ -330,6 +345,7 @@ public final class SinsClient {
         if (sequenceNumber < ProtocolConstants.FIRST_DATA_SEQUENCE_NUMBER) {
             return 0;
         }
+
         return ProtocolConstants.epochForDataSequenceNumber(sequenceNumber);
     }
 

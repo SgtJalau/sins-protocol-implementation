@@ -41,11 +41,7 @@ public final class TranscriptHash {
      * @param clientAuthMessage client auth message.
      * @return SHA-256 transcript hash including CLIENT_AUTH without msg-mac.
      */
-    public static byte[] withClientAuth(
-            HelloMessage helloMessage,
-            HelloAckMessage helloAckMessage,
-            ClientAuthMessage clientAuthMessage
-    ) {
+    public static byte[] withClientAuth(HelloMessage helloMessage, HelloAckMessage helloAckMessage, ClientAuthMessage clientAuthMessage) {
         return sha256(
                 ProtocolMessageCodec.canonicalBytes(helloMessage),
                 ProtocolMessageCodec.canonicalBytes(helloAckMessage),

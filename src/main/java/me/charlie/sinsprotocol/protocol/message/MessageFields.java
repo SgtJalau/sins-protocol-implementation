@@ -20,14 +20,7 @@ final class MessageFields {
     }
 
     //Creates the common authenticated-message fields including epoch and msg-mac.
-    static Map<String, Object> authenticated(
-            MessageType messageType,
-            String sessionId,
-            long sequenceNumber,
-            int version,
-            int epoch,
-            String messageMac
-    ) {
+    static Map<String, Object> authenticated(MessageType messageType, String sessionId, long sequenceNumber, int version, int epoch, String messageMac) {
         Map<String, Object> fields = base(messageType, sessionId, sequenceNumber, version);
         fields.put("epoch", epoch);
         fields.put(ProtocolConstants.MESSAGE_MAC_FIELD, messageMac);
